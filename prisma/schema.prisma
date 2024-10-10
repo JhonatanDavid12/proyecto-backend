@@ -1,0 +1,357 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model alojamientos {
+  idAlojamiento              Int                          @id
+  idPropiedad                Int?
+  codTipoAlojamiento         String?                      @db.VarChar(255)
+  esCompleto                 Int?
+  descripcion                String?                      @db.VarChar(255)
+  descripcion_eng            String?                      @map("descripcion-eng") @db.VarChar(255)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @default(now())
+  areaTotal                  Decimal?                     @db.Decimal(10, 2)
+  nombre                     String?                      @db.VarChar(100)
+  nombre_eng                 String?                      @map("nombre-eng") @db.VarChar(100)
+  tarifaLimpieza             Decimal?                     @db.Decimal(10, 2)
+  tour360                    String?                      @db.VarChar(255)
+  cantidadCamas              Int?
+  propiedades                propiedades?                 @relation(fields: [idPropiedad], references: [idPropiedad], map: "alojamientos_propiedades_FK")
+  tiposAlojamiento           tiposAlojamiento?            @relation(fields: [codTipoAlojamiento], references: [codTipoAlojamiento], map: "alojamientos_tiposAlojamiento_FK")
+  alojamientos_tiposServicio alojamientos_tiposServicio[]
+  ambientes                  ambientes[]
+  bloqueos                   bloqueos[]
+  favoritos                  favoritos[]
+  imagenes                   imagenes[]
+  ofertas                    ofertas[]
+  reservas                   reservas[]
+  tarifas                    tarifas[]
+
+  @@index([idPropiedad], map: "alojamientos_propiedades_FK")
+  @@index([codTipoAlojamiento], map: "alojamientos_tiposAlojamiento_FK")
+}
+
+model alojamientos_tiposServicio {
+  idTiposServicio Int?
+  idAlojamiento   Int?
+  id              Int            @id @default(autoincrement())
+  alojamientos    alojamientos?  @relation(fields: [idAlojamiento], references: [idAlojamiento], onDelete: NoAction, onUpdate: NoAction, map: "alojamientos_tiposServicio_alojamientos_FK")
+  tiposServicio   tiposServicio? @relation(fields: [idTiposServicio], references: [idTiposServicio], map: "alojamientos_tiposServicio_tiposServicio_FK")
+
+  @@index([idAlojamiento], map: "alojamientos_tiposServicio_alojamientos_FK")
+  @@index([idTiposServicio], map: "alojamientos_tiposServicio_tiposServicio_FK")
+}
+
+model ambientes {
+  idAmbiente      String         @id @db.VarChar(255)
+  idAlojamiento   Int?
+  idPropiedad     String?        @db.VarChar(255)
+  codTipoAmbiente String?        @db.VarChar(255)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now())
+  alojamientos    alojamientos?  @relation(fields: [idAlojamiento], references: [idAlojamiento], map: "ambientes_alojamientos_FK")
+  tiposAmbiente   tiposAmbiente? @relation(fields: [codTipoAmbiente], references: [codTipoAmbiente], onDelete: Cascade, map: "ambientes_tiposAmbiente_FK")
+  objetos         objetos[]
+
+  @@index([idAlojamiento], map: "ambientes_alojamientos_FK")
+  @@index([codTipoAmbiente], map: "ambientes_tiposAmbiente_FK")
+}
+
+model bloqueos {
+  idBloqueo     Int           @id @default(autoincrement())
+  idAlojamiento Int?
+  fechaDesde    DateTime?     @db.Date
+  fechaHasta    DateTime?     @db.Date
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now())
+  alojamientos  alojamientos? @relation(fields: [idAlojamiento], references: [idAlojamiento], map: "bloqueos_alojamientos_FK")
+
+  @@index([idAlojamiento], map: "bloqueos_alojamientos_FK")
+}
+
+model catalogoObjetos {
+  idCatalogoObjeto String         @id @db.VarChar(255)
+  codTipoAmbiente  String?        @db.VarChar(255)
+  descripcion      String?        @db.VarChar(50)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
+  tiposAmbiente    tiposAmbiente? @relation(fields: [codTipoAmbiente], references: [codTipoAmbiente], onDelete: NoAction, onUpdate: NoAction, map: "catalogoObjetos_tiposAmbiente_FK")
+  objetos          objetos[]
+
+  @@index([codTipoAmbiente], map: "catalogoObjetos_tiposAmbiente_FK")
+}
+
+model ciudad {
+  idCiudad    String        @id @unique(map: "unq_ciudad_idciudad") @db.VarChar(255)
+  nombre      String?       @db.VarChar(255)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+  latitud     Decimal?      @db.Decimal(11, 8)
+  longitud    Decimal?      @db.Decimal(11, 8)
+  codPais     String?       @db.VarChar(3)
+  pais        pais?         @relation(fields: [codPais], references: [codPais], onDelete: NoAction, onUpdate: NoAction, map: "fk_ciudad_pais")
+  propiedades propiedades[]
+
+  @@index([codPais], map: "fk_ciudad_pais")
+}
+
+model favoritos {
+  idAlojamiento Int
+  idUsuario     String       @db.VarChar(40)
+  createdAt     DateTime     @default(now())
+  alojamientos  alojamientos @relation(fields: [idAlojamiento], references: [idAlojamiento], onDelete: NoAction, onUpdate: NoAction, map: "fk_favoritos_alojamientos")
+  usuarios      usuarios     @relation(fields: [idUsuario], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_favoritos_usuarios")
+
+  @@id([idAlojamiento, idUsuario])
+  @@index([idUsuario], map: "fk_favoritos_usuarios")
+}
+
+model huespedes {
+  idhuesped             Int       @id @default(autoincrement())
+  nombre                String?   @db.VarChar(100)
+  apellido              String?   @db.VarChar(100)
+  email                 String?   @db.VarChar(255)
+  telefono              Int?
+  documentoIdentidad    String?   @db.VarChar(100)
+  urlDocumentoIdentidad String?   @db.VarChar(255)
+  paisDocumento         String?   @db.VarChar(30)
+  contactoEmergencia    String?   @db.VarChar(20)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now())
+  idUsuario             String?   @db.VarChar(40)
+  idReserva             Int?
+  usuarios              usuarios? @relation(fields: [idUsuario], references: [idUsuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_huespedes_usuarios")
+  reservas              reservas? @relation(fields: [idReserva], references: [idReserva], onDelete: Restrict, map: "huespedes_reservas_FK")
+
+  @@index([idUsuario], map: "fk_huespedes_usuarios")
+  @@index([idReserva], map: "huespedes_reservas_FK")
+}
+
+model imagenes {
+  idImagen      String        @id @db.VarChar(255)
+  url           String?       @db.VarChar(255)
+  posicion      Int?
+  tipo          String?       @db.VarChar(20)
+  idPropiedad   Int?
+  idAlojamiento Int?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now())
+  alojamientos  alojamientos? @relation(fields: [idAlojamiento], references: [idAlojamiento], map: "imagenes_alojamientos_FK")
+  propiedades   propiedades?  @relation(fields: [idPropiedad], references: [idPropiedad], map: "imagenes_propiedades_FK")
+
+  @@index([idAlojamiento], map: "imagenes_alojamientos_FK")
+  @@index([idPropiedad], map: "imagenes_propiedades_FK")
+}
+
+model objetos {
+  idObjeto         String           @id @db.VarChar(255)
+  idAmbiente       String?          @db.VarChar(255)
+  idCatalogoObjeto String?          @db.VarChar(255)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @default(now())
+  ambientes        ambientes?       @relation(fields: [idAmbiente], references: [idAmbiente], onDelete: Cascade, map: "objetos_ambientes_FK")
+  catalogoObjetos  catalogoObjetos? @relation(fields: [idCatalogoObjeto], references: [idCatalogoObjeto], onDelete: NoAction, onUpdate: NoAction, map: "objetos_catalogoObjetos_FK")
+
+  @@index([idAmbiente], map: "objetos_ambientes_FK")
+  @@index([idCatalogoObjeto], map: "objetos_catalogoObjetos_FK")
+}
+
+model ofertas {
+  idOferta            String        @id @db.VarChar(255)
+  idAlojamiento       Int?
+  nombre              String?       @db.VarChar(255)
+  fechaDesde          DateTime?     @db.Date
+  fechaHasta          DateTime?     @db.Date
+  porcentajeDescuento Int?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @default(now())
+  alojamientos        alojamientos? @relation(fields: [idAlojamiento], references: [idAlojamiento], map: "ofertas_alojamientos_FK")
+
+  @@index([idAlojamiento], map: "ofertas_alojamientos_FK")
+}
+
+model pais {
+  codPais   String   @id @unique(map: "unq_pais_codpais") @db.VarChar(3)
+  nombre    String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  latitud   Decimal? @db.Decimal(11, 8)
+  longitud  Decimal? @db.Decimal(11, 8)
+  ciudad    ciudad[]
+}
+
+model politicas {
+  idPolitica            Int                     @id
+  textoPolitica         String                  @db.VarChar(255)
+  urlPolitica           String?                 @db.VarChar(100)
+  propiedades_politicas propiedades_politicas[]
+}
+
+model propiedades {
+  idPropiedad           Int                     @id @default(autoincrement())
+  descripcion_eng       String?                 @map("descripcion-eng") @db.Text
+  descripcion           String?                 @db.Text
+  direccion             String?                 @db.VarChar(255)
+  latitud               Decimal?                @db.Decimal(11, 8)
+  longitud              Decimal?                @db.Decimal(11, 8)
+  nombre                String?                 @db.VarChar(50)
+  distanciaAlCentro     Decimal?                @db.Decimal(10, 6)
+  isPetFriendly         Boolean?
+  urlPerfil             String?                 @db.VarChar(100)
+  informacionZona       String?                 @db.VarChar(250)
+  informacionZona_eng   String?                 @map("informacionZona-eng") @db.VarChar(250)
+  checkIn               String?                 @db.VarChar(100)
+  checkOut              String?                 @db.VarChar(100)
+  smokeArea             Int?                    @db.TinyInt
+  party                 Int?                    @db.TinyInt
+  loudMusic             String?                 @db.VarChar(100)
+  addicional            Int?                    @db.TinyInt
+  ascensor              Int?                    @db.TinyInt
+  orientacion           String?                 @db.VarChar(20)
+  desayuno              Int                     @db.TinyInt
+  estacionamiento       String                  @db.VarChar(100)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @default(now())
+  idPropietario         Int?
+  codTipoPropiedad      Int?
+  codPais               String?                 @db.VarChar(3)
+  idCiudad              String?                 @db.VarChar(255)
+  alojamientos          alojamientos[]
+  imagenes              imagenes[]
+  ciudad                ciudad?                 @relation(fields: [idCiudad], references: [idCiudad], onDelete: NoAction, onUpdate: NoAction, map: "fk_propiedades_ciudad")
+  propietarios          propietarios?           @relation(fields: [idPropietario], references: [idPropietario], map: "propiedades_propietarios_FK")
+  tipoPropiedad         tipoPropiedad?          @relation(fields: [codTipoPropiedad], references: [codTipoPropiedad], map: "propiedades_tipoPropiedad_FK")
+  propiedades_politicas propiedades_politicas[]
+
+  @@index([idCiudad], map: "fk_propiedades_ciudad")
+  @@index([codPais], map: "fk_propiedades_pais")
+  @@index([idPropietario], map: "propiedades_propietarios_FK")
+  @@index([codTipoPropiedad], map: "propiedades_tipoPropiedad_FK")
+}
+
+model propiedades_politicas {
+  idPropiedad Int
+  idPolitica  Int
+  politicas   politicas   @relation(fields: [idPolitica], references: [idPolitica], onDelete: NoAction, onUpdate: NoAction, map: "fk_propiedades_politicas_politicas")
+  propiedades propiedades @relation(fields: [idPropiedad], references: [idPropiedad], onDelete: NoAction, onUpdate: NoAction, map: "fk_propiedades_politicas_propiedades")
+
+  @@id([idPropiedad, idPolitica])
+  @@index([idPolitica], map: "fk_propiedades_politicas_politicas")
+}
+
+model propietarios {
+  idPropietario      Int           @id
+  documentoIdentidad String?       @db.VarChar(100)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now())
+  nombre             String?       @db.VarChar(100)
+  telefono           Int?
+  email              String?       @db.VarChar(255)
+  propiedades        propiedades[]
+}
+
+model reservas {
+  idReserva       Int           @id @default(autoincrement())
+  idAlojamiento   Int?
+  fechaDesde      DateTime?     @db.Date
+  fechaHasta      DateTime?     @db.Date
+  numeroHuespedes Int?
+  numeroMascotas  Int?
+  costoTotal      Int?
+  costoLimpieza   Int?
+  costoServicio   Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now())
+  idUsuario       String?       @db.VarChar(40)
+  huespedes       huespedes[]
+  usuarios        usuarios?     @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict, map: "fk_reservas_usuarios")
+  alojamientos    alojamientos? @relation(fields: [idAlojamiento], references: [idAlojamiento], map: "reservas_alojamientos_FK")
+
+  @@index([idUsuario], map: "fk_reservas_usuarios")
+  @@index([idAlojamiento], map: "reservas_alojamientos_FK")
+}
+
+model rol {
+  id          Int    @id @default(autoincrement())
+  descripcion String @db.VarChar(100)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model tabla_prueba {
+  id     Int?
+  nombre String? @db.VarChar(50)
+
+  @@ignore
+}
+
+model tarifas {
+  idTarifa        String       @id @db.VarChar(255)
+  idAlojamiento   Int
+  fechaDesde      DateTime?    @db.Date
+  fechaHasta      DateTime?    @db.Date
+  precioNoche     Int
+  numeroHuespedes Int
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now())
+  alojamientos    alojamientos @relation(fields: [idAlojamiento], references: [idAlojamiento], onDelete: NoAction, onUpdate: NoAction, map: "tarifas_alojamientos_FK")
+
+  @@index([idAlojamiento], map: "tarifas_alojamientos_FK")
+}
+
+model tipoPropiedad {
+  codTipoPropiedad Int           @id
+  descripcion      String?       @db.VarChar(50)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now())
+  propiedades      propiedades[]
+}
+
+model tiposAlojamiento {
+  codTipoAlojamiento String         @id @db.VarChar(255)
+  descripcion        String?        @db.VarChar(50)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @default(now())
+  alojamientos       alojamientos[]
+}
+
+model tiposAmbiente {
+  codTipoAmbiente    String            @id @db.VarChar(255)
+  codTipoAlojamiento String?           @db.VarChar(255)
+  descripcion        String?           @db.VarChar(50)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now())
+  esCompartido       Int               @db.TinyInt
+  ambientes          ambientes[]
+  catalogoObjetos    catalogoObjetos[]
+}
+
+model tiposServicio {
+  descripcion                String?                      @db.VarChar(100)
+  url                        String?                      @db.VarChar(200)
+  idTiposServicio            Int                          @id @default(autoincrement())
+  alojamientos_tiposServicio alojamientos_tiposServicio[]
+}
+
+model usuarios {
+  idUsuario             String      @id @db.VarChar(40)
+  email                 String?     @db.VarChar(255)
+  nombre                String?     @db.VarChar(100)
+  apellido              String?     @db.VarChar(100)
+  telefono              Int?
+  documentoIdentidad    String?     @db.VarChar(100)
+  urlDocumentoIdentidad String?     @db.VarChar(255)
+  paisDocumento         String?     @db.VarChar(30)
+  contactoEmergencia    String?     @db.VarChar(20)
+  createdAt             DateTime    @default(dbgenerated("(now())")) @db.DateTime(0)
+  updatedAt             DateTime    @default(dbgenerated("(now())")) @db.DateTime(0)
+  tipoDocumento         String?     @db.VarChar(100)
+  favoritos             favoritos[]
+  huespedes             huespedes[]
+  reservas              reservas[]
+}
